@@ -1,6 +1,6 @@
 ---
 name: deep-research
-description: "Deep research agent that conducts thorough investigations on any topic and saves structured results to local files. Use when the user says '调研xxx', '调研一下xxx', 'research xxx', '帮我调研', '深度调研', '简单调研', or any request to investigate/research a topic and produce a written report. Also use when the user asks follow-up questions about a previous research topic (e.g., '刚才那个调研，xxx怎么样？', '再深入看看xxx', '补充一下xxx的部分'), to continue researching and update the existing research files. Saves all research output to a dedicated directory under ./research/ (configurable). Supports both quick overviews and deep multi-round investigations."
+description: "Deep research agent that conducts thorough investigations on any topic and saves structured results to local files. Use when the user says '调研xxx', '调研一下xxx', 'research xxx', '帮我调研', '深度调研', '简单调研', or any request to investigate/research a topic and produce a written report. Also use when the user asks follow-up questions about a previous research topic (e.g., '刚才那个调研，xxx怎么样？', '再深入看看xxx', '补充一下xxx的部分'), to continue researching and update the existing research files. Also use when the user says '划线解读', to automatically scan reports for strikethrough marks and explain/rewrite them. Saves all research output to a dedicated directory under ./research/ (configurable). Supports both quick overviews and deep multi-round investigations."
 ---
 
 # Deep Research
@@ -9,10 +9,11 @@ Conduct research on a given topic using web search, analyze findings, and save s
 
 ## Workflow
 
-Determine whether this is a **new research** or a **follow-up** on an existing one:
+Determine the workflow type:
 
 **New research?** → Follow "New Research" workflow
 **Follow-up on existing research?** → Follow "Follow-up" workflow
+**「划线解读」?** → Follow "Strikethrough Review" workflow
 
 ### New Research
 
@@ -39,6 +40,26 @@ When the user asks follow-up questions or requests deeper investigation on a pre
 5. **Update metadata** — Add a `> Last updated: YYYY-MM-DD` line below the research date in `report.md`.
 6. **Summarize to user** — Briefly answer the user's question and indicate which files were updated.
 
+### Strikethrough Review（删除线解读）
+
+当用户在报告中手动添加了删除线标记（`~~被标记的内容~~`）时，表示用户对这些内容**不太理解或存在疑问**，需要进一步解释和改写。
+
+**触发条件**：用户说「划线解读」。
+
+**处理流程**：
+
+1. **自动定位** — 扫描 `research/` 目录下所有 `report.md` 及 `notes/*.md`，找出包含 `~~...~~` 删除线标记的文件，提取被标记的内容及其上下文。如有多个文件命中，按修改时间倒序处理。
+2. **逐条解释** — 对每段被标记的内容，用通俗易懂的语言向用户解释：
+   - 这段内容在说什么
+   - 为什么报告中会这样写
+   - 相关的背景知识（如有必要）
+3. **征求用户同意** — 解释完毕后，向用户提出改写建议，明确说明打算如何用更简洁明了的语言替换原文。**必须等待用户确认后才能修改报告文件。**
+4. **改写并更新** — 用户同意后，将删除线标记的内容替换为改写后的版本（去掉 `~~` 标记），确保：
+   - 语言简洁明了，降低理解门槛
+   - 保留原始信息的准确性
+   - 与上下文衔接自然
+5. **更新 metadata** — 添加 `> Last updated: YYYY-MM-DD` 行。
+
 ## Depth Levels
 
 | Keyword | Behavior |
@@ -51,6 +72,16 @@ Default to **deep research** unless the user explicitly requests a quick/simple 
 ## Language
 
 Match the language of the user's request. Chinese prompt → Chinese report. English prompt → English report.
+
+### 专业术语保留规则
+
+翻译或撰写非英文报告时，**专业专有名词保持英文原文，不翻译**。包括但不限于：
+
+- **技术术语**
+- **产品/项目名**
+- **行业缩写**
+- **学术概念**
+- **协议/标准**
 
 ## Output Structure
 
