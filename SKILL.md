@@ -20,7 +20,7 @@ Determine the workflow type:
 1. **Parse request** — Extract the research topic, desired depth, language, and output path.
 2. **Resolve output directory** — **CRITICAL: Always use the PROJECT ROOT as the base, NOT the current working directory.** Run `git rev-parse --show-toplevel 2>/dev/null || pwd` to reliably find the project root. The output path is `<PROJECT_ROOT>/research/<topic-slug>/`. NEVER use `pwd` alone — it may return a subdirectory (e.g., `.claude/skills/`). NEVER write to `~/research/` or `/Users/<user>/research/` or any path inside `.claude/`. Slugify the topic into a short, filesystem-safe directory name (lowercase, hyphens, no spaces). If the directory already exists, append a numeric suffix.
 3. **Research** — Conduct multi-round web searches, fetch key pages, cross-reference findings.
-4. **Write report** — Save results as Markdown files in the output directory.
+4. **Write report** — Save results as Markdown files in the output directory. Apply the anti-AI-flavor writing discipline in **[writing-style.md](./writing-style.md)** (read it before writing): distinguish sourced facts from your own inference, and suppress AI-flavor patterns (`→`/`——` connectors, 「关键/本质/核心」 clichés, list-count previews, bold pile-ups).
 5. **Render Mermaid diagrams** — If report.md contains ` ```mermaid ` code blocks, render them to images for cross-platform compatibility. See "Mermaid 图表渲染" section below for details.
 6. **Upload rendered images to R2** — If SVG files were generated and R2 is configured, upload them and replace local paths with online URLs. See "图片上传到 R2 图床" section below for details.
 7. **Summarize to user** — Print a brief summary and the path to the output directory. If rendered version was generated, mention both `report.md` (original) and `report-rendered.md` (cross-platform with online image URLs).
@@ -39,6 +39,8 @@ When the user asks follow-up questions or requests deeper investigation on a pre
    - **Broad continuation**: Expand existing sections in `report.md` and update `sources.md` with new references.
 5. **Update metadata** — Add a `> Last updated: YYYY-MM-DD` line below the research date in `report.md`.
 6. **Summarize to user** — Briefly answer the user's question and indicate which files were updated.
+
+> Scope discipline: match the size of the follow-up. "补充一下 X" means update X only — do not rewrite other sections, re-render unrelated diagrams, or expand adjacent content the user didn't ask about. See [writing-style.md](./writing-style.md).
 
 ### Strikethrough Review（删除线解读）
 
@@ -196,10 +198,15 @@ This returns the git repository root. Only falls back to `pwd` if not in a git r
 2. **如不包含**，跳过渲染步骤
 3. **如包含**，对每个含 mermaid 的 `.md` 文件运行：
    ```bash
-   npx -y -p @mermaid-js/mermaid-cli mmdc -i <file>.md -o <file>-rendered.md -e png -t default -b white
+   npx -y -p @mermaid-js/mermaid-cli mmdc \
+     -i <file>.md -o <file>-rendered.md \
+     -e png -b white \
+     -c /Users/yanhaonan/Documents/projects/justtestagents/.claude/skills/deep-research/mermaid-config.json
    ```
    > 使用 `npx -y` 自动下载执行，无需用户预装 mmdc。首次运行会自动安装。
    > 使用 `-e png` 输出 PNG 格式（而非 SVG），确保知乎、微信公众号等所有平台兼容。`-b white` 设置白色背景，避免 PNG 透明底在深色模式下不可读。
+   > **`-c mermaid-config.json` 是高对比度配置**——节点/边/文字全部用 `#111111` 深色，避免默认主题的浅灰字体在白底上看不清。该配置同时设置中文友好的 `fontFamily`（PingFang SC / 微软雅黑等），避免方框字。
+   > 该配置文件路径是绝对路径，确保从任意 cwd 执行 mmdc 都能找到。
 4. **mmdc 会自动**：
    - 将每个 mermaid 代码块渲染为 PNG 文件（`<file>-rendered-1.png`, `-2.png`, ...）
    - 生成 `<file>-rendered.md`，代码块替换为 `![diagram](./<file>-rendered-1.png)` 图片引用
@@ -212,7 +219,9 @@ This returns the git repository root. Only falls back to `pwd` if not in a git r
 
 ```
 💡 报告中包含 Mermaid 图表，但自动渲染未成功。如需上传到不支持 Mermaid 的平台，请手动渲染：
-   npx -p @mermaid-js/mermaid-cli mmdc -i report.md -o report-rendered.md
+   npx -p @mermaid-js/mermaid-cli mmdc -i report.md -o report-rendered.md \
+     -e png -b white \
+     -c /Users/yanhaonan/Documents/projects/justtestagents/.claude/skills/deep-research/mermaid-config.json
 ```
 
 ### 总结时的输出说明
@@ -296,3 +305,4 @@ This returns the git repository root. Only falls back to `pwd` if not in a git r
 - Include dates in findings — note when information may be outdated
 - For comparisons, build structured tables rather than prose lists
 - Cite every factual claim with its source URL
+- **Distinguish sourced facts from your own inference.** When sources don't say something, don't fill the gap with prior knowledge written as if it were researched. Mark cross-source inference, predictions, and your own judgment with prose framing ("各来源没直接对比，综合看我倾向…"), not as source-backed conclusions. Full discipline in [writing-style.md](./writing-style.md).
